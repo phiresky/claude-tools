@@ -2,16 +2,14 @@ import { spawn } from "node:child_process";
 import { writeFile, readFile, unlink } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 import { readConfig } from "./config.ts";
+import { createLogger } from "./log.ts";
+
+const log = createLogger(import.meta);
 
 const TTS_HOST = process.env.TTS_HOST ?? "localhost";
 const TTS_PORT = process.env.TTS_PORT ?? "8000";
 
 const LOCK_FILE = "/tmp/voice-playback.lock";
-
-const log = (...args: unknown[]) => {
-  console.error("[voice]", ...args);
-  writeFile("/tmp/voice-playback.log", `[${new Date().toISOString()}] ${args.join(" ")}\n`, { flag: "a" }).catch(() => {});
-}
 
 async function isLockStale(): Promise<boolean> {
   let pid: string;
@@ -44,6 +42,7 @@ async function acquireLock(maxWaitMs = 30_000): Promise<boolean> {
   while (true) {
     try {
       await writeFile(LOCK_FILE, String(process.pid), { flag: "wx" });
+      if (elapsed > 0) log(`lock acquired after ${elapsed}ms wait`);
       return true;
     } catch {
       if (await isLockStale()) {
@@ -63,8 +62,8 @@ async function acquireLock(maxWaitMs = 30_000): Promise<boolean> {
 
 function preprocessForTTS(text: string): string {
   return text
-    // Strip markdown: bold, italic, backticks
-    .replace(/[*_`~]+/g, "")
+    // Strip markdown: bold, backticks, strikethrough (not underscores — handled by snake_case rule)
+    .replace(/[*`~]+/g, "")
     // File extensions: .txt → " dot txt"
     .replace(/\.([a-zA-Z0-9]{1,10})\b/g, " dot $1")
     // Paths: collapse slashes to "slash"
@@ -76,10 +75,12 @@ function preprocessForTTS(text: string): string {
     .replace(/!=/g, " not equal ")
     .replace(/===/g, " triple equals ")
     .replace(/==/g, " equals ")
-    // snake_case → spaces
-    .replace(/(\w)_(\w)/g, "$1 $2")
+    // Underscores (snake_case, mcp__names) → spaces
+    .replace(/_+/g, " ")
     // camelCase → spaces (e.g. "myFunction" → "my Function")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // Acronyms that TTS should spell out
+    .replace(/\bmcp\b/gi, "MCP")
     // Collapse whitespace
     .replace(/\s+/g, " ")
     .trim();
@@ -100,13 +101,12 @@ export function speakBackground(text: string, voice: string): void {
 
 export async function speak(text: string, voice: string): Promise<void> {
   const url = `http://${TTS_HOST}:${TTS_PORT}/tts`;
-  const id = Math.random().toString(36).slice(2, 6);
   const startTime = performance.now();
   const processed = preprocessForTTS(text);
-  log(`[${id}] speak (voice: ${voice}): "${processed}"`);
+  log(`speak (voice: ${voice}): "${processed}"`);
 
   if (!(await acquireLock())) {
-    log(`[${id}] skipping speech: could not acquire lock`);
+    log("skipping speech: could not acquire lock");
     return;
   }
 
@@ -144,25 +144,25 @@ export async function speak(text: string, voice: string): Promise<void> {
       ffplay.on("close", (code) => {
         if (code && code !== 0) {
           const stderr = Buffer.concat(stderrChunks).toString("utf-8").trim();
-          log(`[${id}] ffplay exited with code ${code}${stderr ? `: ${stderr}` : ""}`);
+          log(`ffplay exited with code ${code}${stderr ? `: ${stderr}` : ""}`);
         }
         resolve();
       });
       ffplay.on("error", (e) => {
-        log(`[${id}] ffplay error: ${e.message}`);
+        log(`ffplay error: ${e.message}`);
         resolve();
       });
       curl.on("error", (e) => {
-        log(`[${id}] curl error: ${e.message}`);
+        log(`curl error: ${e.message}`);
         ffplay.kill();
         resolve();
       });
       curl.on("close", (code) => {
-        if (code && code !== 0) log(`[${id}] curl exited with code ${code}`);
+        if (code && code !== 0) log(`curl exited with code ${code}`);
       });
     });
   } finally {
-    log(`[${id}] done in ${((performance.now() - startTime) / 1000).toFixed(1)}s`);
+    log(`done in ${((performance.now() - startTime) / 1000).toFixed(1)}s`);
     await releaseLock();
   }
 }

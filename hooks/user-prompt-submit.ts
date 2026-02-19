@@ -2,9 +2,13 @@ import process from "node:process";
 import { readStdin, approve, approveWithContext } from "../src/hook-io.ts";
 import { readConfig, clearJustDisabled } from "../src/config.ts";
 import { fullReminder } from "../src/prompt.ts";
+import { createLogger } from "../src/log.ts";
+
+const log = createLogger(import.meta);
 
 const _input = await readStdin();
 const config = readConfig();
+log(`enabled: ${config.enabled}`);
 
 if (config.justDisabled) {
   clearJustDisabled();
