@@ -12,14 +12,14 @@ Enable, disable, or configure voice feedback.
 - `/speak prompt <text>` - Set custom instruction for voice summaries
 - `/speak prompt` - Clear custom prompt
 
-**Config file:** `~/.claude/voice.local.md`
+**Config file:** `~/.claude/voice.json`
 
-```yaml
----
-voice: azelma
-enabled: true
-prompt: "always end with 'peace out'"
----
+```json
+{
+  "voice": "azelma",
+  "enabled": true,
+  "prompt": "always end with 'peace out'"
+}
 ```
 
 **Behavior:**

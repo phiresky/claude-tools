@@ -12,7 +12,7 @@ function findSessionFile(sessionId: string): string | null {
     return null;
   }
   for (const project of dirs) {
-    const candidate = join(projectsDir, project, "sessions", `${sessionId}.jsonl`);
+    const candidate = join(projectsDir, project, `${sessionId}.jsonl`);
     try {
       statSync(candidate);
       return candidate;

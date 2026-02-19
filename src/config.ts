@@ -9,7 +9,7 @@ export interface VoiceConfig {
   justDisabled: boolean;
 }
 
-const CONFIG_PATH = join(homedir(), ".claude", "voice.local.md");
+const CONFIG_PATH = join(homedir(), ".claude", "voice.json");
 
 export function readConfig(): VoiceConfig {
   const defaults: VoiceConfig = {
@@ -26,23 +26,17 @@ export function readConfig(): VoiceConfig {
     return { ...defaults, enabled: false };
   }
 
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!fmMatch) return defaults;
-
-  const yaml = fmMatch[1];
-  const enabledMatch = yaml.match(/^enabled:\s*(.+)$/m);
-  const voiceMatch = yaml.match(/^voice:\s*(.+)$/m);
-  const promptMatch = yaml.match(/^prompt:\s*"?(.*?)"?\s*$/m);
-  const justDisabledMatch = yaml.match(/^just_disabled:\s*(.+)$/m);
-
-  return {
-    enabled: enabledMatch ? enabledMatch[1].trim() === "true" : defaults.enabled,
-    voice: voiceMatch ? voiceMatch[1].trim() : defaults.voice,
-    prompt: promptMatch ? promptMatch[1].trim() : defaults.prompt,
-    justDisabled: justDisabledMatch
-      ? justDisabledMatch[1].trim() === "true"
-      : false,
-  };
+  try {
+    const json = JSON.parse(content);
+    return {
+      enabled: json.enabled ?? defaults.enabled,
+      voice: json.voice ?? defaults.voice,
+      prompt: json.prompt ?? defaults.prompt,
+      justDisabled: json.just_disabled ?? false,
+    };
+  } catch {
+    return defaults;
+  }
 }
 
 export function clearJustDisabled(): void {
@@ -52,6 +46,12 @@ export function clearJustDisabled(): void {
   } catch {
     return;
   }
-  const updated = content.replace(/^just_disabled:.*\n?/m, "");
-  writeFileSync(CONFIG_PATH, updated, "utf-8");
+
+  try {
+    const json = JSON.parse(content);
+    delete json.just_disabled;
+    writeFileSync(CONFIG_PATH, JSON.stringify(json, null, 2) + "\n", "utf-8");
+  } catch {
+    return;
+  }
 }

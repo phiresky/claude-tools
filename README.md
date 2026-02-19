@@ -18,7 +18,7 @@ Audio feedback plugin for Claude Code using pocket-tts. Runs natively on Node.js
 | `/speak prompt <text>` | Set custom voice instruction |
 | `/speak prompt` | Clear custom prompt |
 
-Config is stored in `~/.claude/voice.local.md`.
+Config is stored in `~/.claude/voice.json`.
 
 ## How It Works
 
