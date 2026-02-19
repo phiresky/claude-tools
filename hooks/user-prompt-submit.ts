@@ -1,3 +1,4 @@
+import process from "node:process";
 import { readStdin, approve, approveWithContext } from "../src/hook-io.ts";
 import { readConfig, clearJustDisabled } from "../src/config.ts";
 import { fullReminder } from "../src/prompt.ts";

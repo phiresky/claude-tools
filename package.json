@@ -2,5 +2,9 @@
   "name": "voice",
   "version": "2.0.0",
   "type": "module",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3"
+  }
 }
