@@ -7,6 +7,7 @@ import { createLogger } from "../src/log.ts";
 const log = createLogger(import.meta);
 
 const _input = await readStdin();
+log("stdin:", JSON.stringify(_input));
 const config = readConfig();
 log(`enabled: ${config.enabled}`);
 

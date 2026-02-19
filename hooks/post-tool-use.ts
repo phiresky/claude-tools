@@ -6,6 +6,7 @@ import { createLogger } from "../src/log.ts";
 const log = createLogger(import.meta);
 
 const input = await readStdin();
+log("stdin:", JSON.stringify(input));
 const config = readConfig();
 
 log(`tool: ${input.tool_name ?? "unknown"}`);
