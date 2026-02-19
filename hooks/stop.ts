@@ -28,14 +28,14 @@ const MAX_SPOKEN = 37;
 const marker = extractVoiceMarker(message);
 if (marker) {
   const trimmed = marker.split(/\s+/).slice(0, MAX_SPOKEN).join(" ");
-  speak(trimmed, config.voice);
+  await speak(trimmed, config.voice);
   process.exit(0);
 }
 
 // Tier 2: Short response — speak directly
 const words = message.trim().split(/\s+/);
 if (words.length <= MAX_WORDS) {
-  speak(message.trim(), config.voice);
+  await speak(message.trim(), config.voice);
   process.exit(0);
 }
 
@@ -55,8 +55,8 @@ try {
   const parsed = JSON.parse(result);
   const summary: string = parsed.result ?? parsed.text ?? "";
   if (summary) {
-    speak(summary, config.voice);
-    stopResult({ systemMessage: `\ud83d\udd0a ${summary}` });
+    await speak(summary, config.voice);
+    stopResult({ systemMessage: `🔊 ${summary}` });
     process.exit(0);
   }
 } catch {
@@ -65,4 +65,4 @@ try {
 
 // Tier 4: Truncate to 25 words
 const truncated = words.slice(0, MAX_WORDS).join(" ") + "...";
-speak(truncated, config.voice);
+await speak(truncated, config.voice);

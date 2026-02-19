@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
+import { setTimeout } from "node:timers/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -65,13 +66,13 @@ export async function getLastAssistantMessage(
   while (elapsed <= maxWait) {
     const msg = readLastAssistant(sessionId);
     if (msg !== null) return msg;
-    await new Promise((r) => setTimeout(r, interval));
+    await setTimeout(interval);
     elapsed += interval;
   }
   return null;
 }
 
 export function extractVoiceMarker(text: string): string | null {
-  const match = text.match(/^[ \t]*\ud83d\udce2[ \t]*(.+?)[ \t]*$/m);
+  const match = text.match(/^[ \t]*📢[ \t]*(.+?)[ \t]*$/m);
   return match ? match[1].trim() : null;
 }

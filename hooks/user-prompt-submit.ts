@@ -9,7 +9,7 @@ const config = readConfig();
 if (config.justDisabled) {
   clearJustDisabled();
   approveWithContext(
-    "Voice feedback has been DISABLED. Stop adding \ud83d\udce2 summaries.",
+    "Voice feedback has been DISABLED. Stop adding 📢 summaries.",
   );
   process.exit(0);
 }
