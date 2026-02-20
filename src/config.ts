@@ -9,7 +9,7 @@ export interface VoiceConfig {
   justDisabled: boolean;
 }
 
-const CONFIG_PATH = join(homedir(), ".claude", "voice.json");
+const CONFIG_PATH = join(homedir(), ".claude", "voicy.json");
 
 export function readConfig(): VoiceConfig {
   const defaults: VoiceConfig = {

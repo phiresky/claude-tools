@@ -15,11 +15,13 @@ if (!config.enabled) {
   process.exit(0);
 }
 
+const sessionId = String(input.session_id ?? "").slice(0, 4);
+
 process.stdout.write(
   JSON.stringify({
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
-      additionalContext: shortReminder(),
+      additionalContext: shortReminder(sessionId),
     },
   }) + "\n",
 );

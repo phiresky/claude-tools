@@ -6,8 +6,8 @@ import { createLogger } from "../src/log.ts";
 
 const log = createLogger(import.meta);
 
-const _input = await readStdin();
-log("stdin:", JSON.stringify(_input));
+const input = await readStdin();
+log("stdin:", JSON.stringify(input));
 const config = readConfig();
 log(`enabled: ${config.enabled}`);
 
@@ -24,4 +24,5 @@ if (!config.enabled) {
   process.exit(0);
 }
 
-approveWithContext(fullReminder(config.prompt || undefined));
+const sessionId = String(input.session_id ?? "").slice(0, 4);
+approveWithContext(fullReminder(config.prompt || undefined, sessionId));

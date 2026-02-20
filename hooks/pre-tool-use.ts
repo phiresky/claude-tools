@@ -1,9 +1,13 @@
-import { readStdin } from "../src/hook-io.ts";
+import { unlinkSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { readStdin, block } from "../src/hook-io.ts";
 import { readConfig } from "../src/config.ts";
-import { speakBackground } from "../src/tts.ts";
 import { createLogger } from "../src/log.ts";
 
 const log = createLogger(import.meta);
+const NARRATE_WINDOW_MS = 60_000;
+const RETRY_DELAY_MS = 100;
+const MAX_RETRIES = 3_000 / RETRY_DELAY_MS;
 
 const input = await readStdin();
 log("stdin:", JSON.stringify(input));
@@ -14,66 +18,55 @@ if (!config.enabled) {
 }
 
 const toolName = input.tool_name ?? "";
-const toolInput = input.tool_input ?? {};
+const sessionId = String(input.session_id ?? "").slice(0, 4);
 log(`tool: ${toolName}`);
 
-if (toolName === "AskUserQuestion") {
-  const questions = toolInput.questions as
-    | Array<{ question: string }>
-    | undefined;
-  if (questions?.length) {
-    const text = questions.map((q) => q.question).join(". ");
-    speakBackground(text, config.voice);
-  }
-} else if (toolName === "Bash") {
-  const desc = String(toolInput.description ?? "").trim();
-  if (desc) {
-    speakBackground(`Running a command to ${desc.toLowerCase()}`, config.voice);
-  } else {
-    speakBackground("Running a command", config.voice);
-  }
-} else if (toolName === "Write") {
-  const filePath = String(toolInput.file_path ?? "");
-  const fileName = filePath.split("/").pop() ?? filePath;
-  speakBackground(`Writing to ${fileName}`, config.voice);
-} else if (toolName === "Edit") {
-  const filePath = String(toolInput.file_path ?? "");
-  const fileName = filePath.split("/").pop() ?? filePath;
-  speakBackground(`Editing ${fileName}.`, config.voice);
-} else if (toolName === "Read") {
-  const filePath = String(toolInput.file_path ?? "");
-  const fileName = filePath.split("/").pop() ?? filePath;
-  const limit = toolInput.limit as number | undefined;
-  if (limit) {
-    speakBackground(`Reading ${limit} lines from ${fileName}`, config.voice);
-  } else {
-    speakBackground(`Reading ${fileName}`, config.voice);
-  }
-} else if (toolName === "NotebookEdit") {
-  const filePath = String(toolInput.notebook_path ?? "");
-  const fileName = filePath.split("/").pop() ?? filePath;
-  speakBackground(`Editing notebook ${fileName}`, config.voice);
-} else if (toolName === "WebFetch") {
-  const url = String(toolInput.url ?? "");
-  let host = "";
-  try {
-    host = new URL(url).hostname.replace(/^www\./, "");
-  } catch {}
-  if (host) {
-    speakBackground(`Fetching from ${host}`, config.voice);
-  } else {
-    speakBackground("Fetching a web page", config.voice);
-  }
-} else if (toolName === "WebSearch") {
-  const query = String(toolInput.query ?? "");
-  if (query) {
-    speakBackground(`Searching the web for ${query}`, config.voice);
-  } else {
-    speakBackground("Searching the web", config.voice);
-  }
-} else if (toolName) {
-  const friendly = toolName.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
-  speakBackground(`Tool: ${friendly}`, config.voice);
-} else {
-  speakBackground("Using a tool", config.voice);
+// Skip narration for voicy MCP tools
+if (toolName.startsWith("mcp__plugin_voice_voicy__")) {
+  process.exit(0);
 }
+
+const dir = `/tmp/voice-narrate-${sessionId}`;
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+// Try to consume one matching narrate file (atomic via unlink)
+function tryConsume(): boolean {
+  let files: string[];
+  try {
+    files = readdirSync(dir).filter(f => f.startsWith(`${toolName}-`));
+  } catch {
+    return false;
+  }
+  for (const file of files) {
+    const path = join(dir, file);
+    try {
+      const mtime = statSync(path).mtimeMs;
+      if (Date.now() - mtime > NARRATE_WINDOW_MS) continue;
+      unlinkSync(path);
+      return true; // we consumed it
+    } catch {
+      continue; // ENOENT — another hook consumed it, try next
+    }
+  }
+  return false;
+}
+
+// Retry loop: narrate may be running in parallel and hasn't written files yet
+let narrated = tryConsume();
+if (!narrated) {
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    log(`waiting for narrate (attempt ${i + 1}/${MAX_RETRIES})...`);
+    await sleep(RETRY_DELAY_MS);
+    narrated = tryConsume();
+    if (narrated) break;
+  }
+}
+
+if (narrated) {
+  log("narrate matched, allowing");
+  process.exit(0);
+}
+
+// Block tool calls that weren't preceded by a narrate call
+log("blocking tool call (no matching narrate)");
+block("You must call the narrate tool IN PARALLEL with your other tool calls. Pass all tool name(s) in the 'tool' array parameter. Include narrate in the same message, then retry.");

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { Readable } from "node:stream";
 import { writeFile, readFile, unlink } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 import { readConfig } from "./config.ts";
@@ -111,23 +112,6 @@ export async function speak(text: string, voice: string): Promise<void> {
   }
 
   try {
-    const curl = spawn(
-      "curl",
-      [
-        "-sf",
-        "--max-time",
-        "30",
-        "-X",
-        "POST",
-        url,
-        "--form-string",
-        `voice_url=${voice}`,
-        "-F",
-        "text=<-",
-      ],
-      { stdio: ["pipe", "pipe", "ignore"] },
-    );
-
     const ffplay = spawn(
       "ffplay",
       ["-nodisp", "-autoexit", "-", "-flags", "low_delay", "-probesize", "32", "-analyzeduration", "0"],
@@ -137,8 +121,23 @@ export async function speak(text: string, voice: string): Promise<void> {
     const stderrChunks: Buffer[] = [];
     ffplay.stderr!.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
 
-    curl.stdout!.pipe(ffplay.stdin!);
-    curl.stdin!.end(processed);
+    const form = new FormData();
+    form.append("voice_url", voice);
+    form.append("text", processed);
+
+    const response = await fetch(url, {
+      method: "POST",
+      body: form,
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!response.ok || !response.body) {
+      log(`TTS request failed: ${response.status}`);
+      ffplay.kill();
+      return;
+    }
+
+    Readable.fromWeb(response.body as never).pipe(ffplay.stdin!);
 
     await new Promise<void>((resolve) => {
       ffplay.on("close", (code) => {
@@ -151,14 +150,6 @@ export async function speak(text: string, voice: string): Promise<void> {
       ffplay.on("error", (e) => {
         log(`ffplay error: ${e.message}`);
         resolve();
-      });
-      curl.on("error", (e) => {
-        log(`curl error: ${e.message}`);
-        ffplay.kill();
-        resolve();
-      });
-      curl.on("close", (code) => {
-        if (code && code !== 0) log(`curl exited with code ${code}`);
       });
     });
   } finally {
