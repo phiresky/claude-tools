@@ -44,12 +44,31 @@ Four hooks provide end-to-end voice feedback:
 | `voice` | `azelma` | Voice name for pocket-tts |
 | `prompt` | _(empty)_ | Custom instruction for summary style |
 
+## Remote Container Usage
+
+When Claude Code runs inside a devcontainer, SSH remote, or WSL, the container has no audio device. The speak server bridges this gap — it runs on the host and receives HTTP requests from the container.
+
+**On the host** (where speakers are):
+```bash
+node src/speak-server.ts
+```
+
+**In the container**, set `SPEAK_HOST` to point at the host:
+```bash
+export SPEAK_HOST=host.docker.internal   # or the host's IP
+```
+
+The plugin will POST to `http://$SPEAK_HOST:$SPEAK_PORT/speak` instead of spawning a local subprocess.
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TTS_HOST` | `localhost` | pocket-tts server host |
 | `TTS_PORT` | `8000` | pocket-tts server port |
+| `SPEAK_HOST` | _(unset)_ | Speak server host (enables remote mode) |
+| `SPEAK_PORT` | `7700` | Speak server port |
+| `SPEAK_LISTEN_HOST` | `0.0.0.0` | Speak server bind address |
 
 ## Requirements
 
