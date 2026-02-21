@@ -52,5 +52,8 @@ if (words.length <= MAX_WORDS) {
 
 // Tier 3: No marker on a long response — reject the stop
 log("tier 3: rejecting stop (no 📢 marker)");
-stopResult({ systemMessage: "You forgot to add a 📢 voice summary. Add one now." });
-process.exit(2);
+process.stdout.write(JSON.stringify({
+  decision: "block",
+  reason: "You forgot to add a 📢 voice summary at the end of your response. Add one now."
+}) + "\n");
+process.exit(0);
