@@ -2,11 +2,22 @@
 
 Audio feedback plugin for Claude Code using pocket-tts. Runs natively on Node.js 25 — no build step, no dependencies.
 
-## Setup
+## Install
 
-1. Install as a Claude Code plugin (or symlink into `~/.claude/plugins/`)
-2. Ensure `pocket-tts` is running on `localhost:8000` (or set `TTS_HOST`/`TTS_PORT`)
-3. Ensure `ffplay` is available on PATH
+In Claude Code, add the marketplace and install the plugin:
+
+```
+/plugin marketplace add phiresky/claude-tools
+/plugin install voicy@phiresky-claude-tools
+```
+
+Then restart Claude Code.
+
+### Prerequisites
+
+- **Node.js >= 25** (native TypeScript via type stripping)
+- **pocket-tts** — TTS server (`uvx pocket-tts serve`, or set `TTS_HOST`/`TTS_PORT`)
+- **ffplay** — from ffmpeg, for audio playback
 
 ## Usage
 
@@ -70,9 +81,3 @@ The plugin will POST to `http://$SPEAK_HOST:$SPEAK_PORT/speak` instead of spawni
 | `SPEAK_PORT` | `7700` | Speak server port |
 | `SPEAK_LISTEN_HOST` | `0.0.0.0` | Speak server bind address |
 
-## Requirements
-
-- Node.js ≥ 25 (native TypeScript via type stripping)
-- `pocket-tts` server
-- `ffplay` (from ffmpeg)
-- `curl`

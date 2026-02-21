@@ -1,5 +1,5 @@
 {
-  "name": "voice",
+  "name": "voicy",
   "version": "2.0.0",
   "description": "Audio feedback when Claude Code agent completes tasks using pocket-tts",
   "mcpServers": {

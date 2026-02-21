@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "phiresky-claude-tools",
+      "name": "voicy",
       "description": "Audio feedback when Claude Code agent completes tasks using pocket-tts",
       "version": "2.0.0",
       "source": "./",
