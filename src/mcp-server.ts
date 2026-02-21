@@ -47,7 +47,13 @@ server.registerTool("narrate", {
         const suffix = randomBytes(4).toString("hex");
         writeFileSync(join(dir, `${t}-${suffix}`), "");
       }
-      speakBackground(trimmed, config.voice);
+      try {
+        await speakBackground(trimmed, config.voice);
+      } catch (e) {
+        const msg = (e as Error).message;
+        log(`narrate error: ${msg}`);
+        return { content: [{ type: "text", text: `TTS error: ${msg}` }], isError: true };
+      }
     }
   }
   return { content: [{ type: "text", text: "Narration delivered." }] };

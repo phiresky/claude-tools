@@ -5,7 +5,7 @@ import { createLogger } from "./log.ts";
 const log = createLogger(import.meta);
 
 const PORT = parseInt(process.env.SPEAK_PORT ?? "7700", 10);
-const HOST = process.env.SPEAK_LISTEN_HOST ?? "0.0.0.0";
+const HOST = process.env.SPEAK_LISTEN_HOST ?? "127.0.0.1";
 
 const server = createServer((req, res) => {
   if (req.method === "GET" && req.url === "/health") {

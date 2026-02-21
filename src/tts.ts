@@ -145,15 +145,19 @@ function preprocessForTTS(text: string): string {
  * Fire-and-forget: spawns TTS as a fully detached process and returns immediately.
  * The hook process can exit without waiting for playback to finish.
  */
-export function speakBackground(text: string, voice: string): void {
+export async function speakBackground(text: string, voice: string): Promise<void> {
   if (SPEAK_HOST) {
     const url = `http://${SPEAK_HOST}:${SPEAK_PORT}/speak`;
-    fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, voice }),
-      signal: AbortSignal.timeout(5_000),
-    }).catch((e) => log(`speak-server fetch failed: ${(e as Error).message}`));
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`speak-server returned ${res.status}: ${body}`);
+    }
     return;
   }
 
