@@ -23,7 +23,7 @@ const sessionId = String(input.session_id ?? "").slice(0, 4);
 log(`tool: ${toolName}`);
 
 // Skip narration for voicy MCP tools
-if (toolName.startsWith("mcp__plugin_voice_voicy__")) {
+if (toolName.startsWith("mcp__plugin_voicy_voicy__")) {
   process.exit(0);
 }
 
