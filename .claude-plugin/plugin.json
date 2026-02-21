@@ -4,8 +4,8 @@
   "description": "Audio feedback when Claude Code agent completes tasks using pocket-tts",
   "mcpServers": {
     "voicy": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/src/mcp-server.ts"]
+      "command": "bash",
+      "args": ["-c", "[ -d \"${CLAUDE_PLUGIN_ROOT}/node_modules\" ] || npm install --prefix \"${CLAUDE_PLUGIN_ROOT}\" --omit=dev --silent >&2; exec node \"${CLAUDE_PLUGIN_ROOT}/src/mcp-server.ts\""]
     }
   }
 }
