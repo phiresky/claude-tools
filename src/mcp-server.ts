@@ -9,12 +9,10 @@ import { randomBytes } from "node:crypto";
 import { speakBackground } from "./tts.ts";
 import { readConfig } from "./config.ts";
 import { createLogger } from "./log.ts";
+import { narrateDir } from "./paths.ts";
 
 const log = createLogger(import.meta);
 const CONFIG_PATH = join(homedir(), ".claude", "voicy.json");
-function narrateDir(sessionId: string) {
-  return `/tmp/voice-narrate-${sessionId.slice(0, 4)}`;
-}
 
 function writeVoiceConfig(obj: Record<string, unknown>) {
   mkdirSync(dirname(CONFIG_PATH), { recursive: true });

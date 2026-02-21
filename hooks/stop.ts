@@ -4,6 +4,7 @@ import { readConfig } from "../src/config.ts";
 import { speakBackground } from "../src/tts.ts";
 import { extractVoiceMarker } from "../src/session.ts";
 import { createLogger } from "../src/log.ts";
+import { narrateDir } from "../src/paths.ts";
 
 const log = createLogger(import.meta);
 
@@ -13,7 +14,7 @@ const config = readConfig();
 
 // Clean up narrate state files
 const sessionId = String(input.session_id ?? "").slice(0, 4);
-const dir = `/tmp/voice-narrate-${sessionId}`;
+const dir = narrateDir(sessionId);
 try { rmSync(dir, { recursive: true }); } catch {}
 
 if (!config.enabled) {

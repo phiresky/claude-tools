@@ -1,14 +1,14 @@
 {
-  "name": "voice",
+  "name": "phiresky-claude-tools",
   "metadata": {
     "description": "Audio feedback for Claude Code using pocket-tts"
   },
   "owner": {
-    "name": "phire"
+    "name": "phiresky"
   },
   "plugins": [
     {
-      "name": "voice",
+      "name": "phiresky-claude-tools",
       "description": "Audio feedback when Claude Code agent completes tasks using pocket-tts",
       "version": "2.0.0",
       "source": "./",

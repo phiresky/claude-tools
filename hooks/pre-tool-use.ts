@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { readStdin, block } from "../src/hook-io.ts";
 import { readConfig } from "../src/config.ts";
 import { createLogger } from "../src/log.ts";
+import { narrateDir } from "../src/paths.ts";
 
 const log = createLogger(import.meta);
 const NARRATE_WINDOW_MS = 60_000;
@@ -26,7 +27,7 @@ if (toolName.startsWith("mcp__plugin_voice_voicy__")) {
   process.exit(0);
 }
 
-const dir = `/tmp/voice-narrate-${sessionId}`;
+const dir = narrateDir(sessionId);
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 // Try to consume one matching narrate file (atomic via unlink)
