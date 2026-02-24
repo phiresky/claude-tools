@@ -39,7 +39,7 @@ server.registerTool("narrate", {
   const trimmed = text.trim();
   if (trimmed) {
     const config = readConfig();
-    if (config.enabled) {
+    if (config.mode === "narrate" || config.mode === "always") {
       log(`narrate: "${trimmed}" (next tools: ${tool.join(",")}, session: ${session_id})`);
       const dir = narrateDir(session_id);
       mkdirSync(dir, { recursive: true });
@@ -62,16 +62,20 @@ server.registerTool("narrate", {
 server.registerTool("configure", {
   description: "Configure voice feedback settings: enable/disable, change voice, set custom prompt.",
   inputSchema: {
-    enabled: z.boolean().optional().describe("Enable or disable voice feedback"),
+    mode: z.enum(["off", "quiet", "narrate", "always"]).optional().describe("Voice mode: off (disabled), quiet (only stop summaries & notifications), narrate (encourages narration when natural), always (forces narration on every tool call)"),
     voice: z.string().optional().describe("Voice name to use (e.g. azelma, alba, azure)"),
     prompt: z.string().optional().describe("Custom instruction for voice summaries. Empty string to clear."),
   },
-}, async ({ enabled, voice, prompt }) => {
+}, async ({ mode, voice, prompt }) => {
   const updates: Record<string, unknown> = {};
-  if (typeof enabled === "boolean") updates.enabled = enabled;
+  if (typeof mode === "string") {
+    updates.mode = mode;
+    // Clean up legacy field
+    updates.enabled = undefined;
+  }
   if (typeof voice === "string") updates.voice = voice;
   if (typeof prompt === "string") updates.prompt = prompt || undefined;
-  if (enabled === false) updates.just_disabled = true;
+  if (mode === "off") updates.just_disabled = true;
 
   const merged = writeVoiceConfig(updates);
   log(`configure: ${JSON.stringify(updates)}`);

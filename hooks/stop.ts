@@ -17,7 +17,7 @@ const sessionId = String(input.session_id ?? "").slice(0, 4);
 const dir = narrateDir(sessionId);
 try { rmSync(dir, { recursive: true }); } catch {}
 
-if (!config.enabled) {
+if (config.mode === "off") {
   log("disabled, skipping");
   process.exit(0);
 }

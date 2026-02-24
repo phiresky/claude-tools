@@ -14,7 +14,8 @@ const input = await readStdin();
 log("stdin:", JSON.stringify(input));
 const config = readConfig();
 
-if (!config.enabled) {
+// Only narrate/always modes care about narration
+if (config.mode !== "narrate" && config.mode !== "always") {
   process.exit(0);
 }
 
@@ -52,7 +53,13 @@ function tryConsume(): boolean {
   return false;
 }
 
-// Retry loop: narrate may be running in parallel and hasn't written files yet
+if (config.mode === "narrate") {
+  // Soft mode: consume if available, never block
+  tryConsume();
+  process.exit(0);
+}
+
+// always mode: enforce narration
 let narrated = tryConsume();
 if (!narrated) {
   for (let i = 0; i < MAX_RETRIES; i++) {

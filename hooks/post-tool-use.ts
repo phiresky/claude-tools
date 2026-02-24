@@ -11,7 +11,7 @@ const config = readConfig();
 
 log(`tool: ${input.tool_name ?? "unknown"}`);
 
-if (!config.enabled) {
+if (config.mode === "off") {
   process.exit(0);
 }
 
@@ -21,7 +21,7 @@ process.stdout.write(
   JSON.stringify({
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
-      additionalContext: shortReminder(sessionId),
+      additionalContext: shortReminder(config.mode, sessionId),
     },
   }) + "\n",
 );

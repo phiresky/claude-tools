@@ -9,7 +9,7 @@ const log = createLogger(import.meta);
 const input = await readStdin();
 log("stdin:", JSON.stringify(input));
 const config = readConfig();
-log(`enabled: ${config.enabled}`);
+log(`mode: ${config.mode}`);
 
 if (config.justDisabled) {
   clearJustDisabled();
@@ -19,10 +19,10 @@ if (config.justDisabled) {
   process.exit(0);
 }
 
-if (!config.enabled) {
+if (config.mode === "off") {
   approve();
   process.exit(0);
 }
 
 const sessionId = String(input.session_id ?? "").slice(0, 4);
-approveWithContext(fullReminder(config.prompt || undefined, sessionId));
+approveWithContext(fullReminder(config.mode, config.prompt || undefined, sessionId));

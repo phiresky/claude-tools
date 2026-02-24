@@ -9,7 +9,7 @@ const input = await readStdin();
 log("stdin:", JSON.stringify(input));
 const config = readConfig();
 
-if (!config.enabled) {
+if (config.mode === "off") {
   process.exit(0);
 }
 
