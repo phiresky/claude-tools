@@ -24,8 +24,8 @@ if (config.mode === "off") {
 
 const message = String(input.last_assistant_message ?? "");
 if (!message) {
-  log("ERROR: no last_assistant_message in stdin");
-  process.exit(1);
+  log("no last_assistant_message in stdin, skipping");
+  process.exit(0);
 }
 
 log(`message length: ${message.length} chars, ${message.trim().split(/\s+/).length} words`);
