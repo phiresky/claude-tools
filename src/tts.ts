@@ -13,10 +13,10 @@ const log = createLogger(import.meta);
 const execFile = promisify(execFileCb);
 
 const TTS_HOST = process.env.TTS_HOST ?? "localhost";
-const TTS_PORT = process.env.TTS_PORT ?? "8000";
+const TTS_PORT = process.env.TTS_PORT ?? "25155";
 
 const SPEAK_HOST = process.env.SPEAK_HOST;
-const SPEAK_PORT = process.env.SPEAK_PORT ?? "7700";
+const SPEAK_PORT = process.env.SPEAK_PORT ?? "16043";
 
 const LOCK_FILE = join(RUNTIME_DIR, "playback.lock");
 const SERVER_LOG = join(STATE_DIR, "pocket-tts.log");
