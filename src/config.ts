@@ -3,36 +3,31 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 export type VoiceMode = "off" | "quiet" | "narrate" | "always";
+export type SpeakMode = "auto-start-tts-server" | "connect-to-speak-server";
 
 export interface VoiceConfig {
   mode: VoiceMode;
   voice: string;
   prompt: string;
-  justDisabled: boolean;
+  just_disabled: boolean;
+  speak_mode?: SpeakMode;
+  tts_url?: string; // pocket-tts base URL
+  speak_server_url?: string; // speak-server base URL (when speak_mode is "connect-to-speak-server")
+  speak_server_listen?: string; // "host:port" for speak-server.ts to bind on
 }
 
 const CONFIG_PATH = join(homedir(), ".claude", "voicy.json");
 
-const VALID_MODES = new Set<VoiceMode>(["off", "quiet", "narrate", "always"]);
-
-function resolveMode(json: Record<string, unknown>): VoiceMode {
-  // New-style: explicit mode field
-  if (typeof json.mode === "string" && VALID_MODES.has(json.mode as VoiceMode)) {
-    return json.mode as VoiceMode;
-  }
-  // Legacy: enabled boolean → map to always/off
-  if (typeof json.enabled === "boolean") {
-    return json.enabled ? "always" : "off";
-  }
-  return "always";
-}
 
 export function readConfig(): VoiceConfig {
   const defaults: VoiceConfig = {
     mode: "always",
-    voice: "azelma",
+    voice: "alba",
     prompt: "",
-    justDisabled: false,
+    just_disabled: false,
+    tts_url: "http://localhost:25155",
+    speak_server_url: "http://localhost:25156",
+    speak_server_listen: "localhost:25156",
   };
 
   let content: string;
@@ -44,12 +39,7 @@ export function readConfig(): VoiceConfig {
 
   try {
     const json = JSON.parse(content);
-    return {
-      mode: resolveMode(json),
-      voice: json.voice ?? defaults.voice,
-      prompt: json.prompt ?? defaults.prompt,
-      justDisabled: json.just_disabled ?? false,
-    };
+    return { ...defaults, ...json };
   } catch {
     return defaults;
   }

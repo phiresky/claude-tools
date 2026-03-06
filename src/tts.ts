@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import { writeFile, readFile, unlink, open, mkdir } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 import { join } from "node:path";
-import { readConfig } from "./config.ts";
+import { readConfig, type VoiceConfig } from "./config.ts";
 import { createLogger } from "./log.ts";
 import { RUNTIME_DIR, STATE_DIR } from "./paths.ts";
 
@@ -12,20 +12,20 @@ const log = createLogger(import.meta);
 
 const execFile = promisify(execFileCb);
 
-const TTS_HOST = process.env.TTS_HOST ?? "localhost";
-const TTS_PORT = process.env.TTS_PORT ?? "25155";
-
-const SPEAK_HOST = process.env.SPEAK_HOST;
-const SPEAK_PORT = process.env.SPEAK_PORT ?? "16043";
+function requireTtsUrl(config: VoiceConfig): string {
+  if (!config.tts_url) throw new Error("tts_url is not configured in voicy.json");
+  return config.tts_url;
+}
 
 const LOCK_FILE = join(RUNTIME_DIR, "playback.lock");
 const SERVER_LOG = join(STATE_DIR, "pocket-tts.log");
 
-async function startServer(): Promise<void> {
+async function startServer(ttsUrl: string): Promise<void> {
+  const { hostname, port } = new URL(ttsUrl);
   log("pocket-tts server not responding, starting via uvx...");
   await mkdir(STATE_DIR, { recursive: true });
   const logFd = await open(SERVER_LOG, "a");
-  const child = spawn("uvx", ["pocket-tts", "serve", "--host", TTS_HOST, "--port", TTS_PORT], {
+  const child = spawn("uvx", ["pocket-tts", "serve", "--host", hostname, "--port", port], {
     detached: true,
     stdio: ["ignore", logFd.fd, logFd.fd],
   });
@@ -52,7 +52,7 @@ async function startServer(): Promise<void> {
       throw new Error(`pocket-tts process exited unexpectedly (see ${SERVER_LOG})`);
     }
     try {
-      const res = await fetch(`http://${TTS_HOST}:${TTS_PORT}/health`, { signal: AbortSignal.timeout(2_000) });
+      const res = await fetch(`${ttsUrl}/health`, { signal: AbortSignal.timeout(2_000) });
       if (res.ok) {
         log(`pocket-tts server ready after ${waited / 1000}s`);
         return;
@@ -146,8 +146,11 @@ function preprocessForTTS(text: string): string {
  * The hook process can exit without waiting for playback to finish.
  */
 export async function speakBackground(text: string, voice: string): Promise<void> {
-  if (SPEAK_HOST) {
-    const url = `http://${SPEAK_HOST}:${SPEAK_PORT}/speak`;
+  const config = readConfig();
+
+  if (config.speak_mode === "connect-to-speak-server") {
+    if (!config.speak_server_url) throw new Error("speak_server_url is not configured in voicy.json (required for connect-to-speak-server mode)");
+    const url = `${config.speak_server_url}/speak`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -161,6 +164,11 @@ export async function speakBackground(text: string, voice: string): Promise<void
     return;
   }
 
+  if (config.speak_mode !== "auto-start-tts-server") {
+    throw new Error(`speak_mode must be "auto-start-tts-server" or "connect-to-speak-server", got: ${JSON.stringify(config.speak_mode)}`);
+  }
+
+  requireTtsUrl(config);
   const child = spawn(process.execPath, [import.meta.filename, voice], {
     detached: true,
     stdio: ["pipe", "ignore", "ignore"],
@@ -233,7 +241,9 @@ async function duckOtherAudio(): Promise<() => Promise<void>> {
 }
 
 export async function speak(text: string, voice: string): Promise<void> {
-  const url = `http://${TTS_HOST}:${TTS_PORT}/tts`;
+  const config = readConfig();
+  const ttsUrl = requireTtsUrl(config);
+  const url = `${ttsUrl}/tts`;
   const startTime = performance.now();
   const processed = preprocessForTTS(text);
   log(`speak (voice: ${voice}): "${processed}"`);
@@ -248,8 +258,8 @@ export async function speak(text: string, voice: string): Promise<void> {
     try {
       response = await fetchTTS(url, voice, processed);
     } catch (e) {
-      if (!isConnectionError(e)) throw e;
-      await startServer();
+      if (!isConnectionError(e) || config.speak_mode !== "auto-start-tts-server") throw e;
+      await startServer(ttsUrl);
       response = await fetchTTS(url, voice, processed);
     }
 

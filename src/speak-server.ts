@@ -1,11 +1,16 @@
 import { createServer } from "node:http";
 import { speak } from "./tts.ts";
+import { readConfig } from "./config.ts";
 import { createLogger } from "./log.ts";
 
 const log = createLogger(import.meta);
 
-const PORT = parseInt(process.env.SPEAK_PORT ?? "7700", 10);
-const HOST = process.env.SPEAK_LISTEN_HOST ?? "127.0.0.1";
+const config = readConfig();
+if (!config.speak_server_listen) {
+  throw new Error("speak_server_listen is not configured in voicy.json (e.g. \"127.0.0.1:7700\")");
+}
+const [HOST, portStr] = config.speak_server_listen.split(":");
+const PORT = parseInt(portStr, 10);
 
 const server = createServer((req, res) => {
   if (req.method === "GET" && req.url === "/health") {

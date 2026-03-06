@@ -11,7 +11,7 @@ log("stdin:", JSON.stringify(input));
 const config = readConfig();
 log(`mode: ${config.mode}`);
 
-if (config.justDisabled) {
+if (config.just_disabled) {
   clearJustDisabled();
   approveWithContext(
     "Voice feedback has been DISABLED. Stop adding 📢 summaries.",
