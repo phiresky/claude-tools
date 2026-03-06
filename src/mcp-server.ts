@@ -66,8 +66,9 @@ server.registerTool("configure", {
     mode: z.enum(["off", "quiet", "narrate", "always"]).optional().describe("Voice mode: off (disabled), quiet (only stop summaries & notifications), narrate (encourages narration when natural), always (forces narration on every tool call)"),
     voice: z.string().optional().describe("Voice name to use (e.g. azelma, alba, azure)"),
     prompt: z.string().optional().describe("Custom instruction for voice summaries. Empty string to clear."),
+    speak_mode: z.enum(["auto-start-tts-server", "connect-to-speak-server"]).optional().describe("How to produce audio. auto-start-tts-server: connect to pocket-tts (auto-starts via uvx if needed), play locally via ffplay. connect-to-speak-server: delegate to a remote speak-server. IMPORTANT: Ask the user which mode they want — do not choose for them."),
   },
-}, async ({ mode, voice, prompt }) => {
+}, async ({ mode, voice, prompt, speak_mode }) => {
   const updates: Record<string, unknown> = {};
   if (typeof mode === "string") {
     updates.mode = mode;
@@ -76,6 +77,7 @@ server.registerTool("configure", {
   }
   if (typeof voice === "string") updates.voice = voice;
   if (typeof prompt === "string") updates.prompt = prompt || undefined;
+  if (typeof speak_mode === "string") updates.speak_mode = speak_mode;
   if (mode === "off") updates.just_disabled = true;
 
   const merged = writeVoiceConfig(updates);
