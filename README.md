@@ -1,4 +1,4 @@
-# voice
+# voicy
 
 Audio feedback plugin for Claude Code using pocket-tts. Runs natively on Node.js 25 — no build step, no dependencies.
 
@@ -16,8 +16,8 @@ Then restart Claude Code.
 ### Prerequisites
 
 - **Node.js >= 25** (native TypeScript via type stripping)
-- **pocket-tts** — TTS server (`uvx pocket-tts serve`, or set `TTS_HOST`/`TTS_PORT`)
-- **ffplay** — from ffmpeg, for audio playback
+- **pocket-tts** — TTS server (`uvx pocket-tts serve`)
+- **ffplay** — from ffmpeg, for audio playback (only needed in `auto-start-tts-server` mode)
 
 ## Usage
 
@@ -29,7 +29,7 @@ Then restart Claude Code.
 | `/speak prompt <text>` | Set custom voice instruction |
 | `/speak prompt` | Clear custom prompt |
 
-Config is stored in `~/.claude/voice.json`.
+Config is stored in `~/.claude/voicy.json`.
 
 ## How It Works
 
@@ -49,35 +49,59 @@ Four hooks provide end-to-end voice feedback:
 
 ## Configuration
 
+All config lives in `~/.claude/voicy.json`.
+
 | Key | Default | Description |
 |-----|---------|-------------|
-| `enabled` | `true` | Toggle voice feedback |
-| `voice` | `azelma` | Voice name for pocket-tts |
-| `prompt` | _(empty)_ | Custom instruction for summary style |
+| `mode` | `"always"` | Voice mode: `off`, `quiet`, `narrate`, `always` |
+| `voice` | `"alba"` | Voice name for pocket-tts |
+| `prompt` | `""` | Custom instruction for summary style |
+| `speak_mode` | _(none, required)_ | `"auto-start-tts-server"` or `"connect-to-speak-server"` |
+| `tts_url` | `"http://localhost:25155"` | pocket-tts base URL |
+| `speak_server_url` | `"http://localhost:25156"` | Speak server base URL (for `connect-to-speak-server` mode) |
+| `speak_server_listen` | `"localhost:25156"` | Bind address for `speak-server.ts` |
+
+### Speak Modes
+
+**`auto-start-tts-server`** — Connects directly to pocket-tts at `tts_url`. If the server isn't running, auto-starts it via `uvx pocket-tts serve`. Audio plays locally via ffplay. Best for local development.
+
+**`connect-to-speak-server`** — Delegates to a speak-server at `speak_server_url`, which handles TTS and playback. Best for remote containers (devcontainer, SSH, WSL) where the container has no audio device.
+
+### Example configs
+
+Local usage:
+```json
+{
+  "mode": "narrate",
+  "voice": "alba",
+  "speak_mode": "auto-start-tts-server"
+}
+```
+
+Remote container (speak-server running on host):
+```json
+{
+  "mode": "narrate",
+  "voice": "alba",
+  "speak_mode": "connect-to-speak-server",
+  "speak_server_url": "http://host.docker.internal:25156"
+}
+```
 
 ## Remote Container Usage
 
-When Claude Code runs inside a devcontainer, SSH remote, or WSL, the container has no audio device. The speak server bridges this gap — it runs on the host and receives HTTP requests from the container.
+When Claude Code runs inside a devcontainer, SSH remote, or WSL, the container has no audio device. The speak-server bridges this gap — it runs on the host and receives HTTP requests from the container.
 
 **On the host** (where speakers are):
 ```bash
 node src/speak-server.ts
 ```
 
-**In the container**, set `SPEAK_HOST` to point at the host:
-```bash
-export SPEAK_HOST=host.docker.internal   # or the host's IP
+**In the container**, set `speak_mode` and `speak_server_url` in `~/.claude/voicy.json`:
+```json
+{
+  "speak_mode": "connect-to-speak-server",
+  "speak_server_url": "http://host.docker.internal:25156"
+}
 ```
-
-The plugin will POST to `http://$SPEAK_HOST:$SPEAK_PORT/speak` instead of spawning a local subprocess.
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TTS_HOST` | `localhost` | pocket-tts server host |
-| `TTS_PORT` | `8000` | pocket-tts server port |
-| `SPEAK_HOST` | _(unset)_ | Speak server host (enables remote mode) |
-| `SPEAK_PORT` | `7700` | Speak server port |
-| `SPEAK_LISTEN_HOST` | `0.0.0.0` | Speak server bind address |
 
