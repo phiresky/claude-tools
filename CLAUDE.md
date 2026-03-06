@@ -2,7 +2,7 @@
 
 ## Project structure
 
-- Plugin version lives in `.claude-plugin/plugin.json`, NOT `package.json`
+- Plugin version lives in `.claude-plugin/plugin.json` (line 3) and `.claude-plugin/marketplace.json` (line 13) — keep both in sync
 - `package.json` is just for npm deps; the plugin metadata is separate
 
 ## Architecture

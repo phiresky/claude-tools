@@ -37,23 +37,24 @@ server.registerTool("narrate", {
   },
 }, async ({ text, tool, session_id }) => {
   const trimmed = text.trim();
+  const config = readConfig();
+  if (config.mode !== "narrate" && config.mode !== "always") {
+    return { content: [{ type: "text", text: "Voice is disabled. Use the configure tool to enable it." }], isError: true };
+  }
   if (trimmed) {
-    const config = readConfig();
-    if (config.mode === "narrate" || config.mode === "always") {
-      log(`narrate: "${trimmed}" (next tools: ${tool.join(",")}, session: ${session_id})`);
-      const dir = narrateDir(session_id);
-      mkdirSync(dir, { recursive: true });
-      for (const t of tool) {
-        const suffix = randomBytes(4).toString("hex");
-        writeFileSync(join(dir, `${t}-${suffix}`), "");
-      }
-      try {
-        await speakBackground(trimmed, config.voice);
-      } catch (e) {
-        const msg = (e as Error).message;
-        log(`narrate error: ${msg}`);
-        return { content: [{ type: "text", text: `TTS error: ${msg}` }], isError: true };
-      }
+    log(`narrate: "${trimmed}" (next tools: ${tool.join(",")}, session: ${session_id})`);
+    const dir = narrateDir(session_id);
+    mkdirSync(dir, { recursive: true });
+    for (const t of tool) {
+      const suffix = randomBytes(4).toString("hex");
+      writeFileSync(join(dir, `${t}-${suffix}`), "");
+    }
+    try {
+      await speakBackground(trimmed, config.voice);
+    } catch (e) {
+      const msg = (e as Error).message;
+      log(`narrate error: ${msg}`);
+      return { content: [{ type: "text", text: `TTS error: ${msg}` }], isError: true };
     }
   }
   return { content: [{ type: "text", text: "Narration delivered." }] };
