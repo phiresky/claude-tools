@@ -1,9 +1,9 @@
-import { unlinkSync, readdirSync, statSync } from "node:fs";
+import { unlinkSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { readStdin, block } from "../src/hook-io.ts";
 import { readConfig } from "../src/config.ts";
 import { createLogger } from "../src/log.ts";
-import { narrateDir } from "../src/paths.ts";
+import { narrateDir, RUNTIME_DIR } from "../src/paths.ts";
 
 const log = createLogger(import.meta);
 const NARRATE_WINDOW_MS = 60_000;
@@ -22,6 +22,16 @@ if (config.mode !== "narrate" && config.mode !== "always") {
 const toolName = input.tool_name ?? "";
 const sessionId = String(input.session_id ?? "").slice(0, 4);
 log(`tool: ${toolName}`);
+
+// Stash tool description for the notification hook to read
+const desc = input.tool_input?.description ?? input.tool_input?.command;
+if (desc) {
+  const descFile = join(RUNTIME_DIR, `last-tool-desc-${sessionId}`);
+  try {
+    mkdirSync(RUNTIME_DIR, { recursive: true });
+    writeFileSync(descFile, `${toolName}: ${desc}`);
+  } catch {}
+}
 
 // Skip narration for voicy MCP tools
 if (toolName.startsWith("mcp__plugin_voicy_voicy__")) {
