@@ -1,51 +1,59 @@
 # voicy
 
-Audio feedback plugin for Claude Code using pocket-tts. Runs natively on Node.js 25 — no build step, no dependencies.
+Audio feedback plugin for Claude Code using [pocket-tts](https://github.com/phiresky/pocket-tts). Runs natively on Node.js 22+ (native TypeScript via type stripping).
 
 ## Install
 
-In Claude Code, add the marketplace and install the plugin:
+Add the marketplace and install the plugin:
 
 ```
-/plugin marketplace add phiresky/claude-tools
+/plugin marketplace add phiresky/claude-voicy
 /plugin install voicy@phiresky-claude-tools
 ```
 
-Then restart Claude Code.
-
 ### Prerequisites
 
-- **Node.js >= 25** (native TypeScript via type stripping)
-- **pocket-tts** — TTS server (`uvx pocket-tts serve`)
-- **ffplay** — from ffmpeg, for audio playback (only needed in `auto-start-tts-server` mode)
+- **Node.js >= 22** (native TypeScript via type stripping)
+- **pocket-tts** — TTS server (auto-started via `uvx pocket-tts serve` in `auto-start-tts-server` mode)
+- **ffplay** — from ffmpeg, for local audio playback (only needed in `auto-start-tts-server` mode)
 
 ## Usage
 
-| Command | Effect |
-|---------|--------|
-| `/speak` | Enable voice feedback |
-| `/speak <voice>` | Set voice and enable (e.g., `/speak azure`) |
-| `/speak stop` | Disable voice feedback |
-| `/speak prompt <text>` | Set custom voice instruction |
-| `/speak prompt` | Clear custom prompt |
+Ask Claude to configure voice feedback using the `configure` MCP tool. Examples:
 
-Config is stored in `~/.claude/voicy.json`.
+- "Enable voice narration" — sets mode to `narrate`
+- "Change voice to azure" — sets voice
+- "Disable voice" — sets mode to `off`
+- "Set voice prompt to be sarcastic" — sets custom prompt
 
 ## How It Works
 
-Four hooks provide end-to-end voice feedback:
+Two MCP tools and five hooks provide voice feedback:
 
-- **UserPromptSubmit** — Injects instructions telling Claude to add 📢 summaries
-- **PostToolUse** — Reinforces the 📢 instruction between tool calls
-- **PreToolUse** — Speaks AskUserQuestion prompts and permission dialogs aloud
-- **Stop** — Extracts and speaks a summary when Claude finishes responding
+- **narrate MCP tool** — Claude calls this to speak a short description before tool use. Writes marker files that the pre-tool-use hook consumes for enforcement.
+- **configure MCP tool** — Lets Claude change voice settings (mode, voice, prompt, speak_mode) on behalf of the user.
+- **UserPromptSubmit** — Injects voice instructions into the system prompt (summaries, narration rules based on mode)
+- **PostToolUse** — Reinforces the voice instructions between tool calls
+- **PreToolUse** — Consumes narrate marker files. In `always` mode, blocks tool calls without a preceding narrate. Stashes tool descriptions for richer permission prompt speech.
+- **Notification** — Speaks notifications aloud, including permission prompts with tool descriptions
+- **Stop** — Speaks a summary when Claude finishes responding; blocks if summary marker is missing on long responses
+
+### Voice Modes
+
+| Component | off | quiet | narrate | always |
+|---|---|---|---|---|
+| narrate MCP tool speaks | - | - | yes | yes |
+| pre-tool-use enforcement | - | - | consume only | block |
+| post-tool-use reminder | - | yes | yes | yes |
+| stop hook (speak + enforce) | - | yes | yes | yes |
+| notifications spoken | - | yes | yes | yes |
+| prompt narration section | - | - | soft | mandatory |
 
 ### Stop Summary Tiers
 
-1. **📢 marker** — If Claude added one, speak it (trimmed to 37 words)
-2. **Short response** — If ≤25 words, speak the whole thing
-3. **Claude summarization** — Headless `claude -p` generates a spoken summary
-4. **Truncation** — Fallback: first 25 words + "..."
+1. **Summary marker** — If Claude added one, speak it (trimmed to 37 words)
+2. **Short response** — If <=25 words, speak the whole thing
+3. **Block** — Rejects the stop, asking Claude to add a summary
 
 ## Configuration
 
@@ -56,7 +64,7 @@ All config lives in `~/.claude/voicy.json`.
 | `mode` | `"always"` | Voice mode: `off`, `quiet`, `narrate`, `always` |
 | `voice` | `"alba"` | Voice name for pocket-tts |
 | `prompt` | `""` | Custom instruction for summary style |
-| `speak_mode` | _(none, required)_ | `"auto-start-tts-server"` or `"connect-to-speak-server"` |
+| `speak_mode` | _(required)_ | `"auto-start-tts-server"` or `"connect-to-speak-server"` |
 | `tts_url` | `"http://localhost:25155"` | pocket-tts base URL |
 | `speak_server_url` | `"http://localhost:25156"` | Speak server base URL (for `connect-to-speak-server` mode) |
 | `speak_server_listen` | `"localhost:25156"` | Bind address for `speak-server.ts` |
@@ -104,4 +112,3 @@ node src/speak-server.ts
   "speak_server_url": "http://host.docker.internal:25156"
 }
 ```
-
