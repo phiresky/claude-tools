@@ -25,7 +25,7 @@ function writeVoiceConfig(obj: Record<string, unknown>) {
 
 const server = new McpServer({
   name: "voicy",
-  version: "1.0.0",
+  version: "3.3.5",
 });
 
 server.registerTool("narrate", {
