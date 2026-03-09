@@ -26,7 +26,7 @@ if (type === "permission_prompt") {
   try {
     const desc = readFileSync(descFile, "utf-8").trim();
     unlinkSync(descFile);
-    if (desc) message = `Needs permission: ${desc}`;
+    if (desc) message = desc;
   } catch {}
 }
 
