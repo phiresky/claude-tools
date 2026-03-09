@@ -24,7 +24,11 @@ const sessionId = String(input.session_id ?? "").slice(0, 4);
 log(`tool: ${toolName}`);
 
 // Stash tool description for the notification hook to read
-const desc = input.tool_input?.description ?? input.tool_input?.command;
+let desc = input.tool_input?.description ?? input.tool_input?.command;
+if (!desc && input.tool_input?.file_path) {
+  const parts = String(input.tool_input.file_path).split("/");
+  desc = parts.slice(-2).join("/");
+}
 if (desc) {
   const descFile = join(RUNTIME_DIR, `last-tool-desc-${sessionId}`);
   try {
