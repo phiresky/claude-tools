@@ -38,7 +38,7 @@ const marker = extractVoiceMarker(message);
 if (marker) {
   const trimmed = marker.split(/\s+/).slice(0, MAX_SPOKEN).join(" ");
   log(`tier 1 (marker): "${trimmed}"`);
-  speakBackground(trimmed, config.voice);
+  await speakBackground(trimmed, config.voice);
   process.exit(0);
 }
 
@@ -46,7 +46,7 @@ if (marker) {
 const words = message.trim().split(/\s+/);
 if (words.length <= MAX_WORDS) {
   log(`tier 2 (short): "${message.trim().slice(0, 80)}"`);
-  speakBackground(message.trim(), config.voice);
+  await speakBackground(message.trim(), config.voice);
   process.exit(0);
 }
 

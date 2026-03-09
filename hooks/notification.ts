@@ -31,4 +31,4 @@ if (type === "permission_prompt") {
 }
 
 log(`type: ${type}, message: "${message.slice(0, 80)}"`);
-speakBackground(`${input.title ?? type}. ${message}`, config.voice);
+await speakBackground(`${input.title ?? type}. ${message}`, config.voice);
