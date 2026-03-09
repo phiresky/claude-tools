@@ -10,7 +10,7 @@
     {
       "name": "voicy",
       "description": "Audio feedback when Claude Code agent completes tasks using pocket-tts",
-      "version": "3.3.4",
+      "version": "3.3.5",
       "source": "./",
       "category": "productivity"
     }
