@@ -14,6 +14,7 @@ export interface VoiceConfig {
   tts_url?: string; // pocket-tts base URL
   speak_server_url?: string; // speak-server base URL (when speak_mode is "connect-to-speak-server")
   speak_server_listen?: string; // "host:port" for speak-server.ts to bind on
+  duck_factor?: number; // 0-1: reduce other audio to this fraction during speech (default 0.5)
 }
 
 const CONFIG_PATH = join(homedir(), ".claude", "voicy.json");

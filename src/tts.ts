@@ -193,9 +193,7 @@ async function fetchTTS(url: string, voice: string, text: string): Promise<Respo
   });
 }
 
-const DUCK_FACTOR = 0.2; // reduce other audio to 20% of current volume
-
-async function duckOtherAudio(): Promise<() => Promise<void>> {
+async function duckOtherAudio(duckFactor: number): Promise<() => Promise<void>> {
   try {
     const { stdout } = await execFile("pactl", ["-f", "json", "list", "sink-inputs"]);
     const sinkInputs: Array<{
@@ -210,7 +208,7 @@ async function duckOtherAudio(): Promise<() => Promise<void>> {
       if (channels.length === 0) continue;
 
       const channelPercents = channels.map((ch) => parseInt(ch.value_percent));
-      const duckedPercents = channelPercents.map((p) => Math.max(1, Math.round(p * DUCK_FACTOR)));
+      const duckedPercents = channelPercents.map((p) => Math.max(1, Math.round(p * duckFactor)));
 
       ducked.push({ index: input.index, channelPercents });
       await execFile("pactl", [
@@ -268,7 +266,7 @@ export async function speak(text: string, voice: string): Promise<void> {
       return;
     }
 
-    const restoreAudio = await duckOtherAudio();
+    const restoreAudio = await duckOtherAudio(config.duck_factor ?? 0.5);
     try {
       const ffplay = spawn(
         "ffplay",
