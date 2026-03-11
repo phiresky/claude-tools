@@ -24,12 +24,20 @@ const sessionId = String(input.session_id ?? "").slice(0, 4);
 log(`tool: ${toolName}`);
 
 // Stash tool description for the notification hook to read
-let desc = input.tool_input?.description ?? input.tool_input?.command;
+let desc = input.tool_input?.description;
+if (!desc && input.tool_input?.command) {
+  // Shorten absolute paths (3+ segments) in raw commands for TTS readability
+  desc = String(input.tool_input.command).replace(
+    /\/[\w.+@-]+(\/[\w.+@-]+){2,}/g,
+    (m) => m.split("/").slice(-2).join("/")
+  );
+}
 if (!desc && input.tool_input?.file_path) {
   const parts = String(input.tool_input.file_path).split("/");
   desc = parts.slice(-2).join("/");
 }
 if (desc) {
+  if (desc.length > 120) desc = desc.slice(0, 120);
   const descFile = join(RUNTIME_DIR, `last-tool-desc-${sessionId}`);
   try {
     mkdirSync(RUNTIME_DIR, { recursive: true });
